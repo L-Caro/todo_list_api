@@ -1,0 +1,34 @@
+{
+  "include": ["./src"],
+  "compilerOptions": {
+    /* Projects */
+    "incremental": true,
+
+    /* Language and Environment */
+    "target": "ESNext",
+
+    /* Modules */
+    "module": "CommonJS",
+    "baseUrl": "./",
+    "paths": {
+      "src/*": [ // Raccourci pour pouvoir mettre des chemins d'import src/reste du path plutôt que ../../../
+        "./src/*"
+      ],
+    },
+    "sourceMap": true,
+    "outDir": "./build",
+    "removeComments": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+
+    /* Type Checking */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+
+    /* Completeness */
+    "skipLibCheck": true,
+  }
+}
