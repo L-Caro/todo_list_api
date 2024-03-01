@@ -9,17 +9,22 @@ const taskSchema = new schema<taskType>( {
   title: String,
   description: String,
   dueDate: Date,
+  doneDate: Date,
   status: {
     type: String,
-    enum: ['Pending', 'In progress', 'Completed'],
-    default: 'Pending'
+    enum: ['pending', 'in_progress', 'completed'],
+    default: 'pending'
   },
   recurrence: {
     type: String,
-    enum: [null, 'Daily', 'Weekly', 'Monthly', 'BiMonthly', 'Annually'],
-    default: null
+    enum: [null, 'daily', 'weekly', 'monthly', 'bimonthly', 'annually', 'biannually', 'punctual'],
+    default: 'punctual'
   },
   assignedTo: {
+    type: Mongoose.Types.ObjectId,
+    ref: 'User'
+  },
+  createdBy: {
     type: Mongoose.Types.ObjectId,
     ref: 'User'
   },

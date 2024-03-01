@@ -1,9 +1,11 @@
 import { RequestHandler } from 'express';
 import jwt, { Secret } from 'jsonwebtoken';
+import { Request } from 'src/@types/expressRequest';
 import { DecodedAccessTokenType, decodedRefreshTokenType } from 'src/@types/jwt';
 import { userType } from 'src/@types/user';
 import { ApiError } from 'src/config/error/apiError.config';
-import { fetchUserByEmail, getRefreshToken } from 'src/queries/users.queries';
+import { fetchTaskById } from 'src/queries/tasks.queries';
+import { fetchUserByEmail, fetchUserById, getRefreshToken } from 'src/queries/users.queries';
 
 
 const JWT_SECRET: Secret | undefined = process.env.JWT_SECRET;
@@ -63,36 +65,69 @@ export const generateRefreshToken = ( id: number ): string => {
  * Pour chaque cas, une logique spécifique est mise en place
  */
 export const authorize = ( permission: string, section: string ): RequestHandler => {
-  return async ( req, _res, next ) => {
+  // @ts-ignore
+  return async ( req: Request, _res, next ) => {
     try {
       const authHeader = req.headers.authorization;
-      console.log( 'authHeader', authHeader );
+
       if ( !JWT_SECRET ) {
-        throw new ApiError( { message: 'Ud', infos: { statusCode: 402 } } );
+        return next( new ApiError( { message: 'Ud', infos: { statusCode: 403 } } ) );
       }
       if ( authHeader ) {
         // Vérification que l'IP qui demande est le même IP qui a stocké le token
         const token = authHeader.split( 'Bearer ' )[ 1 ];
+
         // récupère le jeton
         const decoded = jwt.verify( token, JWT_SECRET as Secret ) as DecodedAccessTokenType;
+
         // vérifie la cohérence de l'IP
         if ( decoded.data.ip !== req.ip ) {
           return next( new ApiError( { message: 'Unauthorized', infos: { statusCode: 403 } } ) );
         }
 
         //? Début des différents cas de comparaison
-        // vérifie la création de projet
-        if ( permission === 'mainRoute' && section === 'testJWT' ) {
-          return next();
+
+        if ( (permission === 'create' && section === 'tasks') ) {
+          try {
+            req.userId = decoded.data.id;
+            return next();
+          } catch {
+            return next( new ApiError( { message: 'Invalid token', infos: { statusCode: 401 } } ) );
+          }
+        }
+
+        if ( (permission === 'update' && section === 'users') || (permission === 'delete' && section === 'users') ) {
+          const userId = req.params.id;
+          const user = await fetchUserById( userId );
+          if ( !user ) {
+            return next( new ApiError( { message: 'Not found', infos: { statusCode: 404 } } ) );
+          }
+
+          if ( String( decoded.data.id ) === String( user._id ) ) {
+            return next();
+          }
+        }
+
+        // vérifie le créateur de la tache
+        if ( (permission === 'update' && section === 'tasks') || (permission === 'delete' && section === 'tasks') ) {
+          const taskId = req.params.id;
+          const task = await fetchTaskById( taskId );
+          if ( !task ) {
+            return next( new ApiError( { message: 'Not found', infos: { statusCode: 404 } } ) );
+          }
+
+          if ( String( decoded.data.id ) === String( task.createdBy ) ) {
+            return next();
+          }
         }
 
         //? Fin des différents cas de comparaison et message d'erreur si passage dans aucun
 
-        return next( new ApiError( { message: 'Unrized', infos: { statusCode: 404 } } ) );
+        return next( new ApiError( { message: 'Unauthorized', infos: { statusCode: 403 } } ) );
       }
-      return next( new ApiError( { message: 'Unauthod', infos: { statusCode: 406 } } ) );
+      return next( new ApiError( { message: 'Unauthorized', infos: { statusCode: 403 } } ) );
     } catch ( err ) {
-      return next( new ApiError( { message: 'Unzed', infos: { statusCode: 407 } } ) );
+      return next( new ApiError( { message: 'Unauthorized', infos: { statusCode: 403 } } ) );
     }
   };
 };
@@ -107,12 +142,10 @@ export const isValidRefreshToken = async ( token: string ): Promise<boolean> => 
   if ( !JWT_REFRESH_SECRET ) {
     throw new Error( 'JWT_REFRESH_SECRET is not defined' );
   }
-  console.log( 'token', token );
 
   const decodedRefreshToken = jwt.verify( token, JWT_REFRESH_SECRET as Secret ) as decodedRefreshTokenType;
-  console.log( 'deco', decodedRefreshToken );
   const storedToken = await getRefreshToken( decodedRefreshToken.id );
-  console.log( 'store', storedToken );
+
   return token === String( storedToken );
 };
 
@@ -128,6 +161,6 @@ export const getTokenUser = async ( token: string ): Promise<userType | null> =>
   }
 
   const decoded = jwt.verify( token, JWT_SECRET, { ignoreExpiration: true } ) as DecodedAccessTokenType;
-  console.log( 'deeeecoded', decoded );
+
   return fetchUserByEmail( decoded.data.email );
 };

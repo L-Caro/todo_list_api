@@ -11,6 +11,7 @@ export interface userType extends Document {
   password: string
   username: string,
   googleId: string,
+  isDeleted: boolean,
   profilePicture?: string
   accessToken: JwtPayload
   refreshToken: JwtPayload

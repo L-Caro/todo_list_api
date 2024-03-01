@@ -5,7 +5,7 @@ export interface DecodedAccessTokenType {
   data: {
     ip: string;
     email: string;
-    id: number;
+    id: string;
   };
 }
 

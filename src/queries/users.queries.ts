@@ -57,7 +57,7 @@ export const fetchUserById = ( id: string ) => {
 
 export const fetchUserByEmail = ( email: string ) => {
   try {
-    return User.findOne( { 'email': email } );
+    return User.findOne( { 'email': email, isDeleted: false } );
   } catch ( error ) {
     throw new ApiError(
       { message: 'Erreur lors de la récupération de l\'utilisateur', infos: { statusCode: 500 } } );
@@ -66,7 +66,7 @@ export const fetchUserByEmail = ( email: string ) => {
 
 export const fetchUserByGoogleId = ( googleId: string ) => {
   try {
-    return User.findOne( { 'googleId': googleId } );
+    return User.findOne( { 'googleId': googleId, isDeleted: false } );
   } catch ( error ) {
     throw new ApiError(
       { message: 'Erreur lors de la récupération de l\'utilisateur', infos: { statusCode: 500 } } );

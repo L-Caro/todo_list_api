@@ -10,8 +10,8 @@ import { createUser, fetchUserById } from 'src/queries/users.queries';
 
 export const usersFetch = async ( _req: Request, res: Response, next: NextFunction ) => {
   try {
-    const users = await UserModel.find();
-    return res.json( { users } );
+    const users = await UserModel.find({ isDeleted: false });
+    return res.json( { statusCode: 200, status: 'success', users } );
   } catch ( error ) {
     return next(
       new ApiError( { message: 'Erreur lors de la récupération des utilisateurs', infos: { statusCode: 500 } } ) );
@@ -22,10 +22,10 @@ export const userFetch = async ( req: Request, res: Response, next: NextFunction
   try {
     const userId = req.params.id;
     const user = await fetchUserById( userId );
-    if ( !user ) {
-      return next( new ApiError( { message: 'L\'utilisateur n\'a pas été trouvé', infos: { statusCode: 500 } } ) );
+    if ( !user || user.isDeleted ) {
+      return next( new ApiError( { message: 'L\'utilisateur n\'a pas été trouvé', infos: { statusCode: 404 } } ) );
     }
-    return res.json( { user } );
+    return res.json( { statusCode: 200, status: 'success', user } );
   } catch ( error ) {
     return next(
       new ApiError( { message: 'Erreur lors de la récupération de l\'utilisateur', infos: { statusCode: 500 } } ) );
@@ -39,7 +39,8 @@ export const userCreate = async ( req: Request, res: Response, next: NextFunctio
       return next( new ApiError( { message: 'L\'adresse email est déjà utilisée', infos: { statusCode: 500 } } ) );
     } else {
       const user = await createUser( req.body );
-      return res.json( { user } );
+
+      return res.json( { statusCode: 201, status: 'success', data: user  } );
     }
   } catch ( error ) {
     return next(
@@ -54,7 +55,7 @@ export const userUpdate = async ( req: Request, res: Response, next: NextFunctio
     if ( !updatedUser ) {
       return next( new ApiError( { message: 'L\'utilisateur n\'a pas été trouvé', infos: { statusCode: 500 } } ) );
     }
-    return res.json( { message: 'Utilisateur mis à jour avec succès', user: updatedUser } );
+    return res.json( { statusCode: 200, status: 'success', user: updatedUser } );
   } catch ( error ) {
     return next(
       new ApiError( { message: 'Erreur lors de la mise à jour de l\'utilisateur', infos: { statusCode: 500 } } ) );
@@ -63,11 +64,13 @@ export const userUpdate = async ( req: Request, res: Response, next: NextFunctio
 export const userDelete = async ( req: Request, res: Response, next: NextFunction ) => {
   try {
     const userId = req.params.id;
-    const deletedUser = await UserModel.findByIdAndDelete( userId );
-    if ( !deletedUser ) {
+    const user = await UserModel.findById(userId);
+    if ( !user ) {
       return next( new ApiError( { message: 'L\'utilisateur n\'a pas été trouvé', infos: { statusCode: 500 } } ) );
     }
-    return res.json( { message: 'Utilisateur supprimé avec succès' } );
+    user.isDeleted = true;
+    await user.save();
+    return res.json( { statusCode: 200, status: 'success' } );
   } catch ( error ) {
     return next(
       new ApiError( { message: 'Erreur lors de la suppression de l\'utilisateur', infos: { statusCode: 500 } } ) );
@@ -80,10 +83,10 @@ export const uploadImage = async ( req: Request, res: Response, next: NextFuncti
     if ( !user ) {
       return next( new ApiError( { message: 'Utilisateur non trouvé', infos: { statusCode: 404 } } ) );
     }
-    user.profilePicture = `/upload/profilePictures/${ req.file?.filename }`;
+    if (req.file) { user.profilePicture = `/upload/profilePictures/${ req.file.filename }` }
 
     await user.save();
-    res.json( user );
+    res.json( { statusCode: 200, status: 'success', user } );
   } catch ( error ) {
     next(
       new ApiError( { message: 'Erreur lors de la mise à jour de l\'image de profil', infos: { statusCode: 500 } } ) );

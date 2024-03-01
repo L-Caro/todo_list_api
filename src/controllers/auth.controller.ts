@@ -16,10 +16,10 @@ export const login = async ( req: Request, res: Response, next: NextFunction ) =
       const ip = req.socket.remoteAddress!; // Obtenir l'adresse IP de la requête
 
       if ( err ) {
-        return next( new ApiError( { message: 'Erreur lors de l\'authentification', infos: { statusCode: 500 } } ) );
+        return next( new ApiError( { message: 'Erreur lors de l\'authentification', infos: { statusCode: 401 } } ) );
       }
 
-      if ( !user ) { // Si pas l'user, on rend la page de connexion en affichant le message d'erreur
+      if ( !user || user.isDeleted ) {
         return next( new ApiError( { message: 'Aucun membre trouvé', infos: { statusCode: 500 } } ) );
       }
 
@@ -39,7 +39,7 @@ export const logout = async ( _req: Request, res: Response, next: NextFunction )
     res.clearCookie( 'refreshToken' );
 
     return res.status( 200 ).json( {
-      status: 'success',
+      statusCode: 200, status: 'success',
       data: {
         logged: false
       }
@@ -90,9 +90,9 @@ export const sendTokens = async ( res: Response, ip: string, user: userType ) =>
   res.cookie( 'refreshToken', refreshToken );
 
   return res.status( 200 ).json( {
+    statusCode: 200,
     status: 'success',
     data: {
-      userId,
       logged: true
     }
   } );

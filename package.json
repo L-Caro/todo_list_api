@@ -25,6 +25,7 @@
     "@types/passport-google-oauth2": "^0.1.8",
     "@types/passport-local": "^1.0.38",
     "colors": "^1.4.0",
+    "joi-objectid": "^4.0.2",
     "morgan": "^1.10.0",
     "tsc-alias": "^1.8.8",
     "tsconfig-paths": "^4.2.0",

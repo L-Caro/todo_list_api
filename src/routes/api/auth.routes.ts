@@ -13,6 +13,6 @@ authRouter.get( '/google', googleAuth );
 authRouter.get( '/google/cb', googleAuthCb );
 
 // Rafraichissement du token
-authRouter.post( '/refresh-token', tokenRefresh );
+authRouter.put( '/refresh-token', tokenRefresh );
 
 export default authRouter;

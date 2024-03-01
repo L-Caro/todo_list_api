@@ -12,6 +12,10 @@ const userSchema = new schema<userType>( {
   refreshToken: { type: String },
   email: { type: String },
   password: { type: String },
+  isDeleted: {
+    type: Boolean,
+    default: false
+  },
   username: { type: String, unique: true },
   googleId: { type: String },
   profilePicture: { type: String, default: '/upload/profilePictures/profile.svg' },

@@ -17,14 +17,14 @@ export const taskValidations = Joi.object( {
     'string.max': 'La description de la tache est trop longue',
   } ),
   status: Joi.string()
-  .valid('Pending', 'In progress', 'Completed')
+  .valid('pending', 'in_progress', 'completed')
   .messages({
     'any.only': '{#label} doit être "En attente", "En cours", ou "Completé"',
   }),
   recurrence: Joi.string()
-  .valid(null, 'Daily', 'Weekly', 'Monthly', 'BiMonthly', 'Annually')
+  .valid(null, 'daily', 'weekly', 'monthly', 'bimonthly', 'annually', 'biannually', 'punctual')
   .messages({
-    'any.only': '{#label} doit être null, "Journalier", "Hebdomadaire", "Bi-mensuel", "Mensuel", ou "Annuel"',
+    'any.only': '{#label} doit être null, "Journalier", "Hebdomadaire", "Bi-mensuel", "Mensuel", "Annuel", "Bi-annuel" ou "Ponctuel" ',
   }),
   assignedTo: Joi.string()
   .regex(/^[0-9a-fA-F]{24}$/)
@@ -34,4 +34,10 @@ export const taskValidations = Joi.object( {
   .messages({
     'string.base': 'Chaque tag doit être une chaîne de caractères',
   }),
+  dueDate: Joi.date()
+  .iso()
+  .messages( { 'any.only': 'La date d\'échéance doit être au format ISO 8601' }),
+  doneDate: Joi.date()
+  .iso()
+  .messages( { 'any.only': 'La date de validation de la date doit être au format ISO 8601' }),
 } );

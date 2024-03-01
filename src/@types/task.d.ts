@@ -4,12 +4,14 @@ import { Document } from 'mongoose';
 
 export interface taskType extends Document {
   title: string,
-  description: string,
-  dueDate: Date,
+  description: string | null,
+  dueDate: Date | null,
+  doneDate: Date | null,
   status: string,
   recurrence: string,
   assignedTo: Mongoose.ObjectId
-  tags: [ string ],
+  tags: [ string ] | null,
+  createdBy: Mongoose.ObjectId,
   createdAt: Date,
   updatedAt: Date
 }

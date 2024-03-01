@@ -1,24 +1,24 @@
 import { Router } from 'express';
 
 import upload from 'src/config/multer/profile-picture.config';
+import { authorize } from 'src/config/token/auth.config';
 import {
   uploadImage, userCreate, userDelete, userFetch, usersFetch, userUpdate
 } from 'src/controllers/users.controller';
 import { userValidation } from 'src/validations/user.validations';
 
-import { validate } from 'src/validations/userValidate';
-import { authorize } from '../../config/token/auth.config';
+import { validate } from 'src/validations/Validate';
 
 
 const usersRouter = Router();
 
-usersRouter.get( '/', authorize( 'mainRoute', 'testJWT' ), usersFetch ); // test de route avec JWT
+usersRouter.get( '/', usersFetch );
 usersRouter.get( '/:id', userFetch );
 // @ts-ignore
 usersRouter.post( '/', upload.single( 'image' ), validate( userValidation, 'body' ), userCreate ); // Joy vérifie les
 // @ts-ignore
-usersRouter.put( '/:id', validate( userValidation, 'body' ), userUpdate );
-usersRouter.delete( '/:id', userDelete );
+usersRouter.put( '/:id', authorize('update', 'users'), validate( userValidation, 'body' ), userUpdate );
+usersRouter.delete( '/:id', authorize('delete', 'users'), userDelete );
 
 // image
 usersRouter.post( '/update/image', upload.single( 'profile' ), uploadImage );
