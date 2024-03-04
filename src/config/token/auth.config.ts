@@ -1,9 +1,11 @@
 import { RequestHandler } from 'express';
 import jwt, { Secret } from 'jsonwebtoken';
+import { Types } from 'mongoose';
 import { Request } from 'src/@types/expressRequest';
 import { DecodedAccessTokenType, decodedRefreshTokenType } from 'src/@types/jwt';
 import { userType } from 'src/@types/user';
 import { ApiError } from 'src/config/error/apiError.config';
+import TasksModel from 'src/database/Models/tasks.model';
 import { fetchTaskById } from 'src/queries/tasks.queries';
 import { fetchUserByEmail, fetchUserById, getRefreshToken } from 'src/queries/users.queries';
 
@@ -102,7 +104,6 @@ export const authorize = ( permission: string, section: string ): RequestHandler
           if ( !user ) {
             return next( new ApiError( { message: 'Not found', infos: { statusCode: 404 } } ) );
           }
-
           if ( String( decoded.data.id ) === String( user._id ) ) {
             return next();
           }
@@ -115,10 +116,27 @@ export const authorize = ( permission: string, section: string ): RequestHandler
           if ( !task ) {
             return next( new ApiError( { message: 'Not found', infos: { statusCode: 404 } } ) );
           }
-
           if ( String( decoded.data.id ) === String( task.createdBy ) ) {
             return next();
           }
+        }
+
+        // Suppression de plusieurs taches en même temps
+        if ( permission === 'deleteMany' && section === 'tasks' ) {
+          const { ids } = req.body;
+          if ( !Array.isArray( ids ) || !ids.every( id => Types.ObjectId.isValid( id ) ) ) {
+            return next(
+              new ApiError( { message: 'L\'ID de la tâche n\'est pas valide', infos: { statusCode: 400 } } ) );
+          }
+          const tasks = await TasksModel.find( { _id: { $in: ids } } );
+          if ( tasks.length !== ids.length ) {
+            return next( new ApiError( { message: 'One or more tasks not found', infos: { statusCode: 404 } } ) );
+          }
+          if ( !tasks.every( task => String( decoded.data.id ) === String( task.createdBy ) ) ) {
+            return next( new ApiError(
+              { message: 'User is not authorized to delete one or more of the tasks', infos: { statusCode: 403 } } ) );
+          }
+          return next();
         }
 
         //? Fin des différents cas de comparaison et message d'erreur si passage dans aucun
