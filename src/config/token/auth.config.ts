@@ -6,6 +6,7 @@ import { DecodedAccessTokenType, decodedRefreshTokenType } from 'src/@types/jwt'
 import { userType } from 'src/@types/user';
 import { ApiError } from 'src/config/error/apiError.config';
 import TasksModel from 'src/database/Models/tasks.model';
+import { fetchCommentById } from 'src/queries/comments.queries';
 import { fetchTaskById } from 'src/queries/tasks.queries';
 import { fetchUserByEmail, fetchUserById, getRefreshToken } from 'src/queries/users.queries';
 
@@ -89,7 +90,7 @@ export const authorize = ( permission: string, section: string ): RequestHandler
 
         //? Début des différents cas de comparaison
 
-        if ( (permission === 'create' && section === 'tasks') ) {
+        if ( (permission === 'create' && section === 'tasks') || (permission === 'create' && section === 'comments')) {
           try {
             req.userId = decoded.data.id;
             return next();
@@ -138,6 +139,21 @@ export const authorize = ( permission: string, section: string ): RequestHandler
           }
           return next();
         }
+
+        // vérifie le créateur de la tache
+        if ( (permission === 'update' && section === 'comments') || (permission === 'delete' && section === 'comments') ) {
+          const commentId = req.params.id;
+
+          const comment = await fetchCommentById( commentId );
+
+          if ( !comment ) {
+            return next( new ApiError( { message: 'Not found', infos: { statusCode: 404 } } ) );
+          }
+          if ( String( decoded.data.id ) === String( comment.user ) ) {
+            return next();
+          }
+        }
+
 
         //? Fin des différents cas de comparaison et message d'erreur si passage dans aucun
 

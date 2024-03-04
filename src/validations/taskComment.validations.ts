@@ -1,6 +1,7 @@
 import Joi from 'joi';
 
 export const taskCommentValidation = Joi.object({
+  taskId: Joi.string(),
   comment: Joi.string()
   .max(500)
   .trim()

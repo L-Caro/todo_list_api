@@ -2,8 +2,8 @@ import { Router } from 'express';
 
 import authRouter from 'src/routes/api/auth.routes';
 import tasksRouter from 'src/routes/api/task.routes';
-import usersRouter from './api/users.routes';
-
+import usersRouter from 'src/routes/api/users.routes';
+import commentsRouter from 'src/routes/api/comments.routes'
 
 const apiRouter = Router();
 
@@ -12,5 +12,6 @@ const apiRouter = Router();
 apiRouter.use( '/users', usersRouter );
 apiRouter.use( '/auth', authRouter );
 apiRouter.use('/tasks', tasksRouter)
+apiRouter.use('/comments', commentsRouter)
 
 export default apiRouter;

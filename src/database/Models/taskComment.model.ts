@@ -16,7 +16,7 @@ const taskCommentSchema = new schema<taskCommentType>( {
   },
   comment: String,
   createdAt: { type: Date, default: Date.now },
-  updatedAt: Date,
+  updatedAt: { type: Date, default: Date.now },
 })
 
 const TaskComment = mongoose.model( 'taskComment', taskCommentSchema );
