@@ -20,7 +20,7 @@ const userSchema = new schema<userType>( {
   googleId: { type: String },
   profilePicture: { type: String, default: '/upload/profilePictures/profile.svg' },
   createdAt: { type: Date, default: Date.now },
-  updatedAt: Date,
+  updatedAt: { type: Date, default: Date.now },
 } );
 
 userSchema.statics.hashPassword = async ( password: string ): Promise<string> => {

@@ -8,7 +8,7 @@ export const fetchTaskById = ( id: string ) => {
     return Task.findOne( { '_id': id } );
   } catch ( error ) {
     throw new ApiError(
-      { message: 'Erreur lors de la récupération de l\'utilisateur', infos: { statusCode: 500 } } );
+      { message: 'Erreur lors de la récupération de la tache', infos: { statusCode: 500 } } );
   }
 };
 

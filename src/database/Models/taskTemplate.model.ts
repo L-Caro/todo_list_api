@@ -9,6 +9,7 @@ const taskTemplateSchema = new schema<taskTemplateType>( {
   description: String,
   tags: [String],
   createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
 })
 
 const TaskTemplate = mongoose.model( 'taskTemplate', taskTemplateSchema );

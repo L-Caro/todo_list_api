@@ -6,4 +6,5 @@ export interface taskTemplateType extends Document {
   description: string,
   tags: [string],
   createdAt: Date
+  updatedAt: Date
 }

@@ -9,4 +9,5 @@ export interface taskNotificationType extends Document {
   content: string,
   status: string,
   createdAt: Date,
+  updatedAt: Date,
 }

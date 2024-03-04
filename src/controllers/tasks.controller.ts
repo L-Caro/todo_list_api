@@ -16,7 +16,7 @@ import { querySchema } from 'src/validations/queryTask.validations';
  * @returns {Promise<void>} - A promise that resolves with the fetched tasks or rejects with an error.
  * @throws {ApiError} - An error occurred while fetching the tasks.
  */
-export const tasksFetch = async ( req: RequestWithQuery, res: Response, next: NextFunction ) => {
+export const tasksFetchAll = async ( req: RequestWithQuery, res: Response, next: NextFunction ) => {
   try {
     //? Valider req.query avec Joi
     const { error, value } = querySchema.validate( req.query );
@@ -107,7 +107,7 @@ export const tasksFetch = async ( req: RequestWithQuery, res: Response, next: Ne
  *
  * @throws {ApiError} - If the task ID is not valid or the task is not found
  */
-export const getOneTask = async ( req: Request, res: Response, next: NextFunction ) => {
+export const taskFetchOne = async ( req: Request, res: Response, next: NextFunction ) => {
   try {
     const { id } = req.params;
 
@@ -181,7 +181,7 @@ export const taskCreate = async ( req: RequestCustom, res: Response, next: NextF
  * @returns {Promise<Response>} A promise that resolves to the response object.
  * @throws {ApiError} If the task ID is not valid, or if an error occurs while updating the task.
  */
-export const updateTask = async (req: Request, res: Response, next: NextFunction) => {
+export const taskUpdate = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
@@ -216,7 +216,7 @@ export const updateTask = async (req: Request, res: Response, next: NextFunction
  * @returns {void}
  * @throws {ApiError} - If the task ID is invalid or an error occurs during deletion.
  */
-export const deleteTask = async ( req: Request, res: Response, next: NextFunction ) => {
+export const taskDelete = async ( req: Request, res: Response, next: NextFunction ) => {
   try {
     const { id } = req.params;
 
@@ -251,7 +251,7 @@ export const deleteTask = async ( req: Request, res: Response, next: NextFunctio
  * @param {NextFunction} next - The callback function for error handling.
  * @throws {ApiError} - If an error occurs during the deletion process.
  */
-export const deleteManyTasks = async ( req: Request, res: Response, next: NextFunction ) => {
+export const tasksDeleteMany = async ( req: Request, res: Response, next: NextFunction ) => {
   try {
     const { ids } = req.body;
     console.log('body2', req.body)

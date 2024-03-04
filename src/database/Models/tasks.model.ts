@@ -30,7 +30,7 @@ const taskSchema = new schema<taskType>( {
   },
   tags: [String],
   createdAt: { type: Date, default: Date.now },
-  updatedAt: Date,
+  updatedAt: { type: Date, default: Date.now },
 } );
 
 

@@ -16,6 +16,7 @@ const taskNotificationSchema = new schema<taskNotificationType>( {
   notificationType: String,
   content: String,
   createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
   status: {
     type: String,
     enum: ['read', 'unread'],
