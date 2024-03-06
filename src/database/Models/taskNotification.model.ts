@@ -13,7 +13,11 @@ const taskNotificationSchema = new schema<taskNotificationType>( {
     type: Mongoose.Types.ObjectId,
     ref: 'Task'
   },
-  notificationType: String,
+  notificationType: {
+    type: String,
+    enum: ['TaskDelay', 'RepeatTask', 'NewTask', 'TaskDeleted', 'NewComment'],
+    required: true
+  },
   content: String,
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },

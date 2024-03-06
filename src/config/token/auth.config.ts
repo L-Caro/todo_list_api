@@ -7,6 +7,7 @@ import { userType } from 'src/@types/user';
 import { ApiError } from 'src/config/error/apiError.config';
 import TasksModel from 'src/database/Models/tasks.model';
 import { fetchCommentById } from 'src/queries/comments.queries';
+import { fetchNotificationById } from 'src/queries/notifications.queries';
 import { fetchTaskById } from 'src/queries/tasks.queries';
 import { fetchUserByEmail, fetchUserById, getRefreshToken } from 'src/queries/users.queries';
 
@@ -90,7 +91,7 @@ export const authorize = ( permission: string, section: string ): RequestHandler
 
         //? Début des différents cas de comparaison
 
-        if ( (permission === 'create' && section === 'tasks') || (permission === 'create' && section === 'comments')) {
+        if ( (permission === 'create' && section === 'tasks') || (permission === 'create' && section === 'comments') || (permission === 'create' && section === 'notifications')) {
           try {
             req.userId = decoded.data.id;
             return next();
@@ -154,6 +155,18 @@ export const authorize = ( permission: string, section: string ): RequestHandler
           }
         }
 
+        if ( (permission === 'update' && section === 'notifications') || (permission === 'delete' && section === 'notifications') ) {
+          const notificationId = req.params.id;
+
+          const notification = await fetchNotificationById( notificationId );
+
+          if ( !notification ) {
+            return next( new ApiError( { message: 'Not found', infos: { statusCode: 404 } } ) );
+          }
+          if ( String( decoded.data.id ) === String( notification.user ) ) {
+            return next();
+          }
+        }
 
         //? Fin des différents cas de comparaison et message d'erreur si passage dans aucun
 
