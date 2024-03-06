@@ -1,10 +1,3 @@
-/*
-
-Notification de suppression de tâches : Lorsqu'une tâche est supprimée, il peut être utile d'envoyer une notification aux utilisateurs concernés.
-
-Notification de commentaire sur une tâche : Lorsqu'un nouveau commentaire est ajouté à une tâche
- */
-
 import moment from 'moment';
 import cron from 'node-cron';
 import {taskType} from 'src/@types/task';
@@ -152,7 +145,3 @@ cron.schedule('0 0 * * *', async () => {
   await processTasks('biAnnually');
   await processTasks('annually');
 });
-
-// ? ========================
-// ? Attribution d'une tache
-// ? ========================
