@@ -1,4 +1,4 @@
-import { taskType } from 'src/@types/task';
+import { taskCommentType } from 'src/@types/taskComments';
 import { ApiError } from 'src/config/error/apiError.config';
 import TaskComment from 'src/database/Models/taskComment.model';
 
@@ -12,9 +12,9 @@ export const fetchCommentById = ( id: string ) => {
   }
 };
 
-export const createComment = async( taskData : taskType) => {
+export const createComment = async( commentData : taskCommentType) => {
   try {
-    const newComment = new TaskComment(taskData);
+    const newComment = new TaskComment(commentData);
     console.log('new', newComment)
     await newComment.validate();
     return newComment.save();
