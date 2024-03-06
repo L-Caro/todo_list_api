@@ -5,6 +5,7 @@ import { ApiError } from 'src/config/error/apiError.config';
 import CommentsModel from 'src/database/Models/taskComment.model';
 import TasksModel from 'src/database/Models/tasks.model';
 import { createComment } from 'src/queries/comments.queries';
+import {createNotification} from 'src/queries/notifications.queries';
 
 
 
@@ -70,6 +71,17 @@ export const commentCreate = async ( req: RequestCustom, res: Response, next: Ne
     req.body.user = userId;
 
       const comment = await createComment( req.body );
+
+    // Créez une notification pour l'utilisateur assigné si ce n'est pas l'utilisateur qui a commenté.
+    if (String(task.assignedTo) !== String(userId)) {
+      let notification = {
+        user: task.assignedTo,
+        task: task._id,
+        notificationType: 'NewComment',
+        content: `Un nouveau commentaire a été ajouté à la tâche ${task.title}.`
+      };
+      await createNotification(notification);
+    }
 
       return res.json( {
         statusCode: 201,
