@@ -161,6 +161,7 @@ export const taskCreate = async ( req: RequestCustom, res: Response, next: NextF
       const task = await createTask( body );
 
       // Vérification si la tâche a été attribuée à un autre utilisateur
+      // Et envoi d'une notification
       if (body.assignedTo !== userId) {
         let notification = {
           user: body.assignedTo,
@@ -203,7 +204,24 @@ export const taskUpdate = async (req: Request, res: Response, next: NextFunction
       return next( new ApiError( { message: 'L\'ID de la tâche n\'est pas valide', infos: { statusCode: 400 } } ) );
     }
 
+    // Récupération de l'ancienne tâche pour pouvoir comparer l'ancien assignedTo et le nouveau.
+    const oldTask = await TasksModel.findById(id);
+    if (!oldTask) {
+      return next(new ApiError({ message: "La tâche n'existe pas", infos: { statusCode: 404 }}));
+    }
+
     const task = await TasksModel.findByIdAndUpdate(id, updateData, { new: true });
+
+    // Vérification si le champ assignedTo a été modifié.
+    if (updateData.assignedTo && String(oldTask.assignedTo) !== String(updateData.assignedTo)) {
+      let notification = {
+        user: updateData.assignedTo,
+        task: task?._id,
+        notificationType: 'NewTask',
+        content: `Une nouvelle tâche vous a été attribuée avec le titre ${task?.title}.`
+      };
+      await createNotification(notification);
+    }
 
     return res.json({
       status: 'success',
@@ -237,7 +255,24 @@ export const taskDelete = async ( req: Request, res: Response, next: NextFunctio
       return next( new ApiError( { message: 'L\'ID de la tâche n\'est pas valide', infos: { statusCode: 400 } } ) );
     }
 
+    const task = await TasksModel.findById(id);
+
+    if (!task) {
+      return next(new ApiError({ message: "La tâche n'existe pas", infos: { statusCode: 404 }}));
+    }
+
     await TasksModel.findByIdAndDelete( id );
+
+    // Création d'une notification de tâche supprimée pour l'utilisateur assigné
+    if (task.assignedTo) {
+      let notification = {
+        user: task.assignedTo,
+        task: task._id,
+        notificationType: 'TaskDeleted',
+        content: `La tâche intitulée ${task.title} qui vous a été attribuée a été supprimée.`
+      };
+      await createNotification(notification);
+    }
 
     res.json( {
       status: 'success',
