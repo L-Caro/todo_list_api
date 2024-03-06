@@ -3,6 +3,7 @@ import { Types } from 'mongoose';
 import { Request as RequestCustom, RequestWithQuery } from 'src/@types/expressRequest';
 import { ApiError } from 'src/config/error/apiError.config';
 import TasksModel from 'src/database/Models/tasks.model';
+import {createNotification} from 'src/queries/notifications.queries';
 import { createTask } from 'src/queries/tasks.queries';
 import { querySchema } from 'src/validations/queryTask.validations';
 
@@ -158,6 +159,17 @@ export const taskCreate = async ( req: RequestCustom, res: Response, next: NextF
       body.createdBy = userId;
       body.assignedTo = body.assignedTo ? body.assignedTo : userId;
       const task = await createTask( body );
+
+      // Vérification si la tâche a été attribuée à un autre utilisateur
+      if (body.assignedTo !== userId) {
+        let notification = {
+          user: body.assignedTo,
+          task: task._id,
+          notificationType: 'NewTask',
+          content: `Vous avez une nouvelle tâche intitulée ${task.title}.`
+        };
+        await createNotification(notification);
+      }
 
       return res.json( {
         statusCode: 201,
