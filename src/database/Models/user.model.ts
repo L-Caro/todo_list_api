@@ -17,6 +17,7 @@ const userSchema = new schema<userType>( {
     default: false
   },
   username: { type: String, unique: true },
+  nonWorkingDays: { type: [Number], default: [0, 1]}, // dimanche = 0, lundi = 1 ...
   googleId: { type: String },
   profilePicture: { type: String, default: '/upload/profilePictures/profile.svg' },
   createdAt: { type: Date, default: Date.now },

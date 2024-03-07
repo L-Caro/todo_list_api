@@ -12,9 +12,10 @@ export interface userType extends Document {
   username: string,
   googleId: string,
   isDeleted: boolean,
-  profilePicture?: string
-  accessToken: JwtPayload
-  refreshToken: JwtPayload
+  profilePicture?: string,
+  nonWorkingDays?: number[],
+  accessToken: JwtPayload,
+  refreshToken: JwtPayload,
   createdAt: Date,
   updatedAt: Date,
   comparePassword( password: string ): Promise<boolean>;

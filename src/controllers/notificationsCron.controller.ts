@@ -3,7 +3,7 @@ import cron from 'node-cron';
 import {taskType} from 'src/@types/task';
 import TaskNotification from 'src/database/Models/taskNotification.model';
 import Task from 'src/database/Models/tasks.model';
-
+import {fetchUserById} from 'src/queries/users.queries';
 
 // ? ==================================
 // ? Gestion de la date butoir dépassée
@@ -36,7 +36,6 @@ cron.schedule('0 0 * * *', async () => {
   });
 });
 
-
 // ? ==================================
 // ? Mise à jour des taches répétitives
 // ? ==================================
@@ -56,7 +55,6 @@ Object.keys(CHECKING_PERIODS).forEach((recurrence) => {
   SEARCH_CRITERIA[recurrence] = {status: STATUS_COMPLETED, recurrence};
 });
 
-
 /**
  * Returns the next work day based on the given date and direction.
  *
@@ -65,12 +63,14 @@ Object.keys(CHECKING_PERIODS).forEach((recurrence) => {
  *                              If false, searches for the previous work day before the given date.
  * @return {Date} - The next work day as a Date object.
  */
-function getNextWorkDay(date: moment.Moment, isForward: boolean) {
+function getNextWorkDay(date: moment.Moment, isForward: boolean, nonWorkingDays: number[]) {
   const step = isForward ? 1 : -1;
   let nextWorkDay = date.clone();
-  while (nextWorkDay.day() === 0 || nextWorkDay.day() === 1) {
+
+  while (nonWorkingDays.includes(nextWorkDay.day())) {
     nextWorkDay = nextWorkDay.add(step, 'days');
   }
+
   return nextWorkDay.toDate();
 }
 
@@ -79,45 +79,36 @@ function getNextWorkDay(date: moment.Moment, isForward: boolean) {
  *
  * @param {taskType} task - The task object to update
  * @param {object} options - The options object containing the recurrence
- * @param {string} options.recurrence - The recurrence of the task (daily, weekly, biMonthly, monthly, annually, biAnnually)
+ * @param {string} options.recurrence - The recurrence of the task (daily, weekly, biMonthly, monthly, annually,
+ *   biAnnually)
  *
  * @return {Promise<void>} - A promise that resolves when the task status is updated
  */
-async function updateTaskStatus(task: taskType, {recurrence}: { recurrence: string }) {
+async function updateTaskStatus(task: taskType, {recurrence, nonWorkingDays}: { recurrence: string, nonWorkingDays: number[] }) {
   const completedDate = moment(task.doneDate);
   const daysDiff = moment().diff(completedDate, 'days');
 
   if (recurrence === 'daily' && daysDiff >= CHECKING_PERIODS.daily) {
     task.status = STATUS_PENDING;
-    task.dueDate = getNextWorkDay(moment(), true);
-  }
-
-  else if (recurrence === 'weekly' && moment().isoWeek() - completedDate.isoWeek() >= 1) {
+    task.dueDate = getNextWorkDay(moment(), true, nonWorkingDays);
+  } else if (recurrence === 'weekly' && moment().isoWeek() - completedDate.isoWeek() >= 1) {
     task.status = STATUS_PENDING;
-    task.dueDate = getNextWorkDay(moment().endOf('isoWeek'), false);
-  }
-
-  else if (recurrence === 'biMonthly' && moment().isoWeek() - completedDate.isoWeek() >= 2) {
+    task.dueDate = getNextWorkDay(moment().endOf('isoWeek'), false, nonWorkingDays);
+  } else if (recurrence === 'biMonthly' && moment().isoWeek() - completedDate.isoWeek() >= 2) {
     task.status = STATUS_PENDING;
-    task.dueDate = getNextWorkDay(moment().add(1, 'weeks').endOf('isoWeek'), false);
-  }
-
-  else if (recurrence === 'monthly' && moment().month() - completedDate.month() >= 1) {
+    task.dueDate = getNextWorkDay(moment().add(1, 'weeks').endOf('isoWeek'), false, nonWorkingDays);
+  } else if (recurrence === 'monthly' && moment().month() - completedDate.month() >= 1) {
     task.status = STATUS_PENDING;
-    task.dueDate = getNextWorkDay(moment().endOf('month'), false);
-  }
-
-  else if (recurrence === 'annually' && moment().year() - completedDate.year() >= 1) {
+    task.dueDate = getNextWorkDay(moment().endOf('month'), false, nonWorkingDays);
+  } else if (recurrence === 'annually' && moment().year() - completedDate.year() >= 1) {
     task.status = STATUS_PENDING;
-    task.dueDate = getNextWorkDay(moment().endOf('year'), false);
-  }
-
-  else if (recurrence === 'biAnnually' && moment().month() - completedDate.month() >= 3) {
+    task.dueDate = getNextWorkDay(moment().endOf('year'), false, nonWorkingDays);
+  } else if (recurrence === 'biAnnually' && moment().month() - completedDate.month() >= 3) {
     task.status = STATUS_PENDING;
-    task.dueDate = getNextWorkDay(moment().add(2, 'months').endOf('month'), false);
+    task.dueDate = getNextWorkDay(moment().add(2, 'months').endOf('month'), false, nonWorkingDays);
   }
 
-  if(task.status === STATUS_PENDING) {
+  if (task.status === STATUS_PENDING) {
     await Task.findOneAndUpdate({_id: task._id}, task);
   }
 }
@@ -130,7 +121,12 @@ async function updateTaskStatus(task: taskType, {recurrence}: { recurrence: stri
  */
 async function processTasks(recurrence: string) {
   const tasks = await Task.find(SEARCH_CRITERIA[recurrence]);
-  const taskPromises = tasks.map(task => updateTaskStatus(task, {recurrence}));
+
+  const taskPromises = tasks.map(async task => {
+    const user = await fetchUserById(String(task.assignedTo));
+    if (user) updateTaskStatus(task, {recurrence, nonWorkingDays: user.nonWorkingDays!});
+  });
+
   await Promise.all(taskPromises);
 }
 
