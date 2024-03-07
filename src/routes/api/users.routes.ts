@@ -17,7 +17,7 @@ usersRouter.get( '/:id', userFetch );
 // @ts-ignore
 usersRouter.post( '/', upload.single( 'image' ), validate( userCreateValidation, 'body' ), userCreate ); // Joy vérifie les
 // @ts-ignore
-usersRouter.put( '/:id', authorize('update', 'users'), validate( userUpdateValidation, 'body' ), userUpdate );
+usersRouter.patch( '/:id', authorize('update', 'users'), validate( userUpdateValidation, 'body' ), userUpdate );
 usersRouter.delete( '/:id', authorize('delete', 'users'), userDelete );
 
 // image
