@@ -81,4 +81,5 @@ export const taskUpdateValidations = Joi.object( {
   doneDate: Joi.date()
   .iso()
   .messages( { 'any.only': 'La date de validation de la date doit être au format ISO 8601' }),
+  newPosition: Joi.number()
 } );

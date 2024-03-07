@@ -15,7 +15,6 @@ export const fetchNotificationById = ( id: string ) => {
 export const createNotification = async( notificationData : Partial<taskNotificationType>) => {
   try {
     const newNotification = new TaskNotification(notificationData);
-    console.log('new', newNotification)
     await newNotification.validate();
     return newNotification.save();
   } catch (error) {

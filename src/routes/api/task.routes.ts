@@ -1,8 +1,9 @@
 import { Router } from 'express';
 import { authorize } from 'src/config/token/auth.config';
 import {
+  taskChangeOrder,
   taskCreate, taskDelete,
-  taskFetchOne, tasksDeleteMany,
+  taskFetchOne,
   tasksFetchAll, taskUpdate
 
 } from 'src/controllers/tasks.controller';
@@ -21,6 +22,8 @@ tasksRouter.post('/', authorize('create', 'tasks'), validate( taskCreateValidati
 // @ts-ignore
 tasksRouter.patch('/:id', authorize('update', 'tasks'), validate( taskUpdateValidations, 'body' ), taskUpdate);
 tasksRouter.delete('/:id', authorize('delete', 'tasks'), taskDelete);
-tasksRouter.delete('/', authorize('deleteMany', 'tasks'), tasksDeleteMany);
+
+// Glisser déposer
+tasksRouter.patch('/:id/order', taskChangeOrder)
 
 export default tasksRouter;

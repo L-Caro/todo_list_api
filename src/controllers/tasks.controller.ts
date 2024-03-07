@@ -158,6 +158,12 @@ export const taskCreate = async ( req: RequestCustom, res: Response, next: NextF
     } else {
       body.createdBy = userId;
       body.assignedTo = body.assignedTo ? body.assignedTo : userId;
+
+      // On implémente une position initiale à la tache
+      const maxOrderTask = await TasksModel.findOne({ recurrence: body.recurrence}).sort(`-orderIndices.${body.recurrence}`).limit(1)
+      const newOrderIndex = maxOrderTask ? maxOrderTask.orderIndices[body.recurrence] + 1 : 0;
+      body.orderIndices = { [body.recurrence]: newOrderIndex };
+
       const task = await createTask( body );
 
       // Vérification si la tâche a été attribuée à un autre utilisateur
@@ -238,6 +244,71 @@ export const taskUpdate = async (req: Request, res: Response, next: NextFunction
 };
 
 /**
+ * Move a task to a new position and update the positions of affected tasks
+ * @param {Request} req - The request object
+ * @param {Response} res - The response object
+ * @param {NextFunction} next - The next middleware function
+ * @returns {Promise<void>} - A promise that resolves when the task change is complete
+ * @throws {ApiError} - If there is an error during the task change
+ */
+export const taskChangeOrder = async ( req: Request, res: Response, next: NextFunction ) => {
+  try {
+    // Récupère les données de l'API
+    const { newPosition } = req.body;
+    const id = req.params.id;
+
+    // Obtient la tâche déplacée
+    const movedTask = await TasksModel.findById(id);
+    if (!movedTask) {
+      return next(new ApiError({ message: "La tâche n'a pas été trouvée", infos: { statusCode: 404 }}));
+    }
+
+    // Obtient toutes les tâches affectées par le déplacement
+    // Ce sont toutes les tâches avec une position d'ordre supérieure ou égale à la nouvelle position
+
+    // Toutes les tâches qui ont un indice d'ordre supérieur à la tâche qui a été supprimée
+    // ? OK
+    const affectedTasks = await TasksModel.find({
+      [`orderIndices.${movedTask.recurrence}`]: {$gt: newPosition},
+      recurrence: movedTask.recurrence
+    });
+
+
+
+    // Décrémenter l'indice d'ordre de chaque tâche affectée
+    // ! Revoir la logique. Ca ne doit pas incrementer systematiquement.
+    const updatePromises = affectedTasks.map(affectedTask => TasksModel.updateOne(
+      {_id: affectedTask._id},
+      {$inc: {[`orderIndices.${movedTask.recurrence}`]: 1}}
+    ));
+
+
+    // Met à jour la position de la tâche déplacée
+    // ? OK
+    updatePromises.push(TasksModel.updateOne(
+      { _id: movedTask._id },
+      { [`orderIndices.${movedTask.recurrence}`]: newPosition }
+    ));
+
+    // Attendez que toutes les promesses soient résolues
+    await Promise.all(updatePromises);
+
+    return res.json({
+      status: 'success',
+      statusCode: 200,
+      data: {
+        task: movedTask,
+        message: 'Tâche mise à jour avec succès'
+      }
+    });
+
+  } catch (error) {
+    return next(new ApiError({ message: "Une erreur est survenue pendant la mise à jour de la tâche", infos: { statusCode: 500 }}));
+  }
+}
+
+
+/**
  * Deletes a task.
  * @async
  * @param {Object} req - The request object.
@@ -260,6 +331,24 @@ export const taskDelete = async ( req: Request, res: Response, next: NextFunctio
     if (!task) {
       return next(new ApiError({ message: "La tâche n'existe pas", infos: { statusCode: 404 }}));
     }
+
+
+    // Toutes les tâches qui ont un indice d'ordre supérieur à la tâche qui a été supprimée
+    const affectedTasks = await TasksModel.find({
+      [`orderIndices.${task.recurrence}`]: {$gt: task.orderIndices[task.recurrence]},
+      recurrence: task.recurrence
+    });
+
+    // Décrémenter l'indice d'ordre de chaque tâche affectée
+    const updatePromises = affectedTasks.map(affectedTask => TasksModel.updateOne(
+      {_id: affectedTask._id},
+      {$inc: {[`orderIndices.${task.recurrence}`]: -1}}
+    ));
+
+    // Attendez que toutes les promesses soient résolues
+    await Promise.all(updatePromises);
+
+
 
     await TasksModel.findByIdAndDelete( id );
 
@@ -284,29 +373,6 @@ export const taskDelete = async ( req: Request, res: Response, next: NextFunctio
 
   } catch ( error ) {
     return next( new ApiError(
-      { message: 'Une erreur s\'est produite lors de la suppression de la tâche', infos: { statusCode: 500 } } ) );
-  }
-};
-
-/**
- * Delete multiple tasks from the TasksModel.
- * This function is an asynchronous function that deletes multiple tasks based on the given ids in the request payload.
- * It takes three arguments: req, res, and next.
- *
- * @param {Request} req - The request object received from the client.
- * @param {Response} res - The response object to send back to the client.
- * @param {NextFunction} next - The callback function for error handling.
- * @throws {ApiError} - If an error occurs during the deletion process.
- */
-export const tasksDeleteMany = async ( req: Request, res: Response, next: NextFunction ) => {
-  try {
-    const { ids } = req.body;
-    console.log('body2', req.body)
-    await TasksModel.deleteMany( { _id: { $in: ids } } );
-    res.json( { status: 'success', message: 'Tasks deleted successfully' } );
-  } catch ( err ) {
-    // handle error
-    next( new ApiError(
       { message: 'Une erreur s\'est produite lors de la suppression de la tâche', infos: { statusCode: 500 } } ) );
   }
 };

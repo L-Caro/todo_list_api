@@ -15,7 +15,6 @@ export const fetchCommentById = ( id: string ) => {
 export const createComment = async( commentData : taskCommentType) => {
   try {
     const newComment = new TaskComment(commentData);
-    console.log('new', newComment)
     await newComment.validate();
     return newComment.save();
   } catch (error) {

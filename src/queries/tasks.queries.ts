@@ -15,7 +15,6 @@ export const fetchTaskById = ( id: string ) => {
 export const createTask = async( taskData : taskType) => {
   try {
     const newTask = new Task(taskData);
-    console.log('new', newTask)
     await newTask.validate();
     return newTask.save();
   } catch (error) {

@@ -20,6 +20,15 @@ const taskSchema = new schema<taskType>( {
     enum: [null, 'daily', 'weekly', 'monthly', 'bimonthly', 'annually', 'biannually', 'punctual'],
     default: 'punctual'
   },
+  orderIndices: {
+    daily: { type: Number },
+    weekly: { type: Number },
+    monthly: { type: Number },
+    bimonthly: { type: Number },
+    annually: { type: Number },
+    biannually: { type: Number },
+    punctual: { type: Number },
+  },
   assignedTo: {
     type: Mongoose.Types.ObjectId,
     ref: 'User'
