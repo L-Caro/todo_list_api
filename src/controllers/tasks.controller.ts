@@ -243,13 +243,15 @@ export const taskUpdate = async (req: Request, res: Response, next: NextFunction
   }
 };
 
+
 /**
- * Move a task to a new position and update the positions of affected tasks
- * @param {Request} req - The request object
- * @param {Response} res - The response object
- * @param {NextFunction} next - The next middleware function
- * @returns {Promise<void>} - A promise that resolves when the task change is complete
- * @throws {ApiError} - If there is an error during the task change
+ * Changes the order of a task.
+ *
+ * @param {Request} req - The request object.
+ * @param {Response} res - The response object.
+ * @param {NextFunction} next - The next function.
+ * @returns {Promise<Response>} The updated task or an error response.
+ * @throws {ApiError} If the task is not found or an error occurs during the update.
  */
 export const taskChangeOrder = async ( req: Request, res: Response, next: NextFunction ) => {
   try {
@@ -257,41 +259,43 @@ export const taskChangeOrder = async ( req: Request, res: Response, next: NextFu
     const { newPosition } = req.body;
     const id = req.params.id;
 
+
     // Obtient la tâche déplacée
     const movedTask = await TasksModel.findById(id);
     if (!movedTask) {
       return next(new ApiError({ message: "La tâche n'a pas été trouvée", infos: { statusCode: 404 }}));
     }
 
-    // Obtient toutes les tâches affectées par le déplacement
-    // Ce sont toutes les tâches avec une position d'ordre supérieure ou égale à la nouvelle position
+    // Ancien emplacement
+    const oldIndex = movedTask.orderIndices[movedTask.recurrence];
 
-    // Toutes les tâches qui ont un indice d'ordre supérieur à la tâche qui a été supprimée
-    // ? OK
-    const affectedTasks = await TasksModel.find({
-      [`orderIndices.${movedTask.recurrence}`]: {$gt: newPosition},
-      recurrence: movedTask.recurrence
-    });
+    // Mettre à jour les indices des tâches affectées
+    if (oldIndex < newPosition) {
+      // La tâche a été déplacée vers le bas dans la liste
+      await TasksModel.updateMany(
+        {
+          ["orderIndices." + movedTask.recurrence]: {
+            $gt: oldIndex,
+            $lte: newPosition,
+          },
+        },
+        {$inc: {["orderIndices." + movedTask.recurrence]: -1}}
+      );
+    } else if (oldIndex > newPosition) {
+        // La tâche a été déplacée vers le haut dans la liste
+        await TasksModel.updateMany(
+          {
+            ["orderIndices." + movedTask.recurrence]: {
+              $gte: newPosition,
+              $lt: oldIndex,
+            },
+          },
+          { $inc: { ["orderIndices." + movedTask.recurrence]: 1 } }
+        );
+      }
 
-
-
-    // Décrémenter l'indice d'ordre de chaque tâche affectée
-    // ! Revoir la logique. Ca ne doit pas incrementer systematiquement.
-    const updatePromises = affectedTasks.map(affectedTask => TasksModel.updateOne(
-      {_id: affectedTask._id},
-      {$inc: {[`orderIndices.${movedTask.recurrence}`]: 1}}
-    ));
-
-
-    // Met à jour la position de la tâche déplacée
-    // ? OK
-    updatePromises.push(TasksModel.updateOne(
-      { _id: movedTask._id },
-      { [`orderIndices.${movedTask.recurrence}`]: newPosition }
-    ));
-
-    // Attendez que toutes les promesses soient résolues
-    await Promise.all(updatePromises);
+    movedTask.orderIndices[movedTask.recurrence] = newPosition;
+    await movedTask.save();
 
     return res.json({
       status: 'success',
