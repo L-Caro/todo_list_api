@@ -35,17 +35,19 @@ const googleStrategy = new GoogleStrategy( {
     try {
       const { id, displayName, email } = profile; // Récupération des informations du profil Google
 
+      const existingUser = await fetchUserByEmail( email ); // Recherche de l'utilisateur dans la base de données par
+                                                         // e-mail
+      if (existingUser) {
+        // Si l'utilisateur existe déjà avec cet e-mail, vous refusez la connexion.
+        // Vous pouvez personnaliser le message d'erreur selon vos besoins
+        return done(new ApiError(
+          { message: 'Un utilisateur avec cet e-mail existe déjà. Veuillez vous connecter en utilisant votre e-mail et votre mot de passe.', infos: { statusCode: 401 } } ))
+      }
+
+      // S'il n'y a pas d'utilisateur existant avec cet e-mail, vous pouvez procéder à l'authentification Google
+
       const userId = await fetchUserByGoogleId( id ); // Recherche de l'utilisateur dans la base de données par ID
                                                       // Google
-      const userEmail = await fetchUserByEmail( email ); // Recherche de l'utilisateur dans la base de données par
-                                                         // e-mail
-
-      // Si l'utilisateur existe déjà dans la base de données, le connecter
-      // Possible que le compte avec l'email ne soit pas le même que le compte avec le googleId
-      // Donc on connect avec le compte approprié
-      if ( userEmail ) {
-        return done( null, userEmail );
-      }
       if ( userId ) {
         return done( null, userId );
       }

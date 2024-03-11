@@ -5,6 +5,7 @@ import { googleAuth, googleAuthCb, login, logout, tokenRefresh } from 'src/contr
 const authRouter = Router();
 
 // Connexion
+
 authRouter.post( '/signin', login );
 authRouter.get( '/signout', logout );
 
